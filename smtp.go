@@ -45,6 +45,7 @@ func (s smtpSender) Send(ctx context.Context, messages Message) (err error) {
 
 	buf := bytes.NewBuffer(nil)
 
+	buf.WriteString("MIME-Version: 1.0\n")
 	buf.WriteString(fmt.Sprintf("Subject: %s\n", messages.Subject))
 	buf.WriteString(fmt.Sprintf("To: %s\n", buildRecepient(messages.To)))
 
@@ -56,17 +57,15 @@ func (s smtpSender) Send(ctx context.Context, messages Message) (err error) {
 		buf.WriteString(fmt.Sprintf("Bcc: %s\n", buildRecepient(messages.Bcc)))
 	}
 
-	buf.WriteString("MIME-Version: 1.0\n")
-
 	writer := multipart.NewWriter(buf)
 	boundary := writer.Boundary()
 
 	if withAttachment {
-		buf.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\n", boundary))
-		buf.WriteString(fmt.Sprintf("--%s\n", boundary))
+		buf.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n", boundary))
+		buf.WriteString(fmt.Sprintf("\r\n--%s\r\n", boundary))
 	}
 
-	buf.WriteString(fmt.Sprintf("Content-Type: %s; charset=utf-8\r\n", messages.Body.ContentType))
+	buf.WriteString(fmt.Sprintf("Content-Type: %s; charset=\"utf-8\"\r\n", messages.Body.ContentType))
 	buf.WriteString("\r\n" + mustBuildBody(messages.Body))
 
 	if withAttachment {
